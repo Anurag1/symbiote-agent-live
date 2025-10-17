@@ -1,0 +1,16 @@
+strands-agents
+bedrock-agentcore
+boto3
+wikipedia-api
+z3-solver
+lark
+sympy
+networkx
+pytholog
+requests
+aws-cdk-lib==2.100.0
+constructs>=10.0.0
+aws-lambda-powertools
+pytest
+wikipedia
+sympy
