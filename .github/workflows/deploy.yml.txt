@@ -1,0 +1,52 @@
+name: Deploy Symbiote Agent
+
+on:
+  push:
+    branches: [ "main" ]  # Auto-deploy on push to main
+  workflow_dispatch:      # Allow manual deploy from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1               # Change if needed
+      FUNCTION_NAME: symbiote-agent       # Your Lambda function name
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          cd symbiote-agent
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          cd symbiote-agent
+          pytest -v --maxfail=1 --disable-warnings
+
+      - name: Package for deployment
+        run: |
+          cd symbiote-agent
+          zip -r ../lambda_package.zip . -x "*.git*" "__pycache__/*" "*.pytest_cache/*" "tests/*"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --zip-file fileb://lambda_package.zip
